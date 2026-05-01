@@ -4,8 +4,15 @@
     <vendor url="https://cloudant.github.io" email="iiim.cloudy@gmail.com">Jakey CHAI</vendor>
 
     <description><![CDATA[
-        <h1>FontViewer</h1>
-        <p>A font viewer plugin, supports TTF/OTF and WOFF/WOFF2</p>
+        <p>Preview font files (TTF, OTF, WOFF, WOFF2) directly inside the IDE.</p>
+        <ul>
+            <li>Custom text preview at multiple sizes with live glyph set</li>
+            <li>Browse the Private Use Area (U+E000–U+F8FF)</li>
+            <li>Glyph index with canvas rendering — click to inspect metrics, copy text or SVG</li>
+            <li>Font metadata from the name table with clipboard support</li>
+            <li>Follows the IDE light/dark theme</li>
+        </ul>
+        Licensed under <b>MIT License</b>.
         ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
