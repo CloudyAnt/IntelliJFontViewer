@@ -35,6 +35,12 @@ object FontPreviewHtmlBuilder {
             .replace("__TEXT_METADATA_COPY_ALL_LITERAL__", jsMessageLiteral("preview.metadata.copyAll"))
             .replace("__TEXT_METADATA_COPIED_LITERAL__", jsMessageLiteral("preview.metadata.copied"))
             .replace("__TEXT_METADATA_COPY_FAILED_LITERAL__", jsMessageLiteral("preview.metadata.copyFailed"))
+            .replace("__TEXT_GLYPH_DETAIL_TITLE_LITERAL__", jsMessageLiteral("preview.glyph.detail.title"))
+            .replace("__TEXT_GLYPH_DETAIL_CLOSE_LITERAL__", jsMessageLiteral("preview.glyph.detail.close"))
+            .replace("__TEXT_GLYPH_DETAIL_COPY_TEXT_LITERAL__", jsMessageLiteral("preview.glyph.detail.copyText"))
+            .replace("__TEXT_GLYPH_DETAIL_COPY_SVG_LITERAL__", jsMessageLiteral("preview.glyph.detail.copySvg"))
+            .replace("__TEXT_GLYPH_DETAIL_COPIED_LITERAL__", jsMessageLiteral("preview.glyph.detail.copied"))
+            .replace("__TEXT_GLYPH_DETAIL_COPY_FAILED_LITERAL__", jsMessageLiteral("preview.glyph.detail.copyFailed"))
 
         return htmlTemplate
             .replace("__FONT_DATA_URL__", StringUtil.escapeXmlEntities(fontDataUrl))
@@ -69,6 +75,10 @@ object FontPreviewHtmlBuilder {
             .replace("__TEXT_METADATA_COPY_ALL__", xmlMessage("preview.metadata.copyAll"))
             .replace("__TEXT_PREVIOUS__", xmlMessage("preview.action.previous"))
             .replace("__TEXT_NEXT__", xmlMessage("preview.action.next"))
+            .replace("__TEXT_GLYPH_DETAIL_TITLE__", xmlMessage("preview.glyph.detail.title"))
+            .replace("__TEXT_GLYPH_DETAIL_CLOSE__", xmlMessage("preview.glyph.detail.close"))
+            .replace("__TEXT_GLYPH_DETAIL_COPY_TEXT__", xmlMessage("preview.glyph.detail.copyText"))
+            .replace("__TEXT_GLYPH_DETAIL_COPY_SVG__", xmlMessage("preview.glyph.detail.copySvg"))
     }
 
     private fun metadataEntriesAsJsLiteral(entries: List<FontMetadataParser.MetadataEntry>): String {

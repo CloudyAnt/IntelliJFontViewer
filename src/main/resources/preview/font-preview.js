@@ -16,6 +16,12 @@
     const textMetadataCopyAll = __TEXT_METADATA_COPY_ALL_LITERAL__;
     const textMetadataCopied = __TEXT_METADATA_COPIED_LITERAL__;
     const textMetadataCopyFailed = __TEXT_METADATA_COPY_FAILED_LITERAL__;
+    const textGlyphDetailTitle = __TEXT_GLYPH_DETAIL_TITLE_LITERAL__;
+    const textGlyphDetailClose = __TEXT_GLYPH_DETAIL_CLOSE_LITERAL__;
+    const textGlyphDetailCopyText = __TEXT_GLYPH_DETAIL_COPY_TEXT_LITERAL__;
+    const textGlyphDetailCopySvg = __TEXT_GLYPH_DETAIL_COPY_SVG_LITERAL__;
+    const textGlyphDetailCopied = __TEXT_GLYPH_DETAIL_COPIED_LITERAL__;
+    const textGlyphDetailCopyFailed = __TEXT_GLYPH_DETAIL_COPY_FAILED_LITERAL__;
 
     const applyTheme = (theme) => {
         const normalizedTheme = theme === 'light' ? 'light' : 'dark';
@@ -43,6 +49,13 @@
         metadataList: document.getElementById('metadata-list'),
         metadataStatus: document.getElementById('metadata-status'),
         metadataCopyAll: document.getElementById('metadata-copy-all'),
+        glyphDetailOverlay: document.getElementById('glyph-detail-overlay'),
+        glyphDetailBackdrop: document.querySelector('.glyph-detail-backdrop'),
+        glyphDetailClose: document.getElementById('glyph-detail-close'),
+        glyphDetailCanvas: document.getElementById('glyph-detail-canvas'),
+        glyphDetailTable: document.getElementById('glyph-detail-table'),
+        glyphDetailCopyText: document.getElementById('glyph-detail-copy-text'),
+        glyphDetailCopySvg: document.getElementById('glyph-detail-copy-svg'),
     };
 
     const state = {
@@ -79,6 +92,14 @@
         parsingFontBytes: textParsingFontBytes,
         showingGlyphIndex: textShowingGlyphIndex,
         unableToParseFont: textUnableToParseFont,
+    });
+    initGlyphDetail(refs, state, {
+        title: textGlyphDetailTitle,
+        close: textGlyphDetailClose,
+        copyText: textGlyphDetailCopyText,
+        copySvg: textGlyphDetailCopySvg,
+        copied: textGlyphDetailCopied,
+        copyFailed: textGlyphDetailCopyFailed,
     });
 })();
 
@@ -316,6 +337,13 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
             label.textContent = gid === 0 ? 'gid 0 (.notdef)' : 'gid ' + gid;
             item.appendChild(label);
 
+            item.addEventListener('click', () => {
+                const glyphData = buildGlyphDetailData(gid, state.parsedFont);
+                if (glyphData) {
+                    showGlyphDetail(refs, state, glyphData);
+                }
+            });
+
             fragment.appendChild(item);
         }
         refs.glyphGrid.appendChild(fragment);
@@ -488,5 +516,252 @@ function readGlyphInkColor() {
 
 function toHex(value) {
     return value.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function initGlyphDetail(refs, state, texts) {
+    var currentGlyphData = null;
+
+    var closeModal = function () {
+        if (refs.glyphDetailOverlay) {
+            refs.glyphDetailOverlay.classList.remove('open');
+        }
+        currentGlyphData = null;
+    };
+
+    if (refs.glyphDetailClose) {
+        refs.glyphDetailClose.addEventListener('click', closeModal);
+    }
+    if (refs.glyphDetailBackdrop) {
+        refs.glyphDetailBackdrop.addEventListener('click', closeModal);
+    }
+
+    if (refs.glyphDetailCopyText) {
+        refs.glyphDetailCopyText.textContent = texts.copyText;
+        refs.glyphDetailCopyText.addEventListener('click', async function () {
+            if (!currentGlyphData) return;
+            var text = currentGlyphData.entries
+                .map(function (e) { return e.key + ': ' + e.value; })
+                .join('\n');
+            var ok = await copyText(text);
+            updateCopyButtonState(refs.glyphDetailCopyText, ok, texts.copyText, texts.copied, texts.copyFailed);
+        });
+    }
+
+    if (refs.glyphDetailCopySvg) {
+        refs.glyphDetailCopySvg.textContent = texts.copySvg;
+        refs.glyphDetailCopySvg.addEventListener('click', async function () {
+            if (!currentGlyphData) return;
+            var svg = currentGlyphData.svg;
+            if (!svg) return;
+            var ok = await copyText(svg);
+            updateCopyButtonState(refs.glyphDetailCopySvg, ok, texts.copySvg, texts.copied, texts.copyFailed);
+        });
+    }
+
+    window.showGlyphDetail = function (refs, state, glyphData) {
+        currentGlyphData = glyphData;
+        renderGlyphDetailCanvas(refs.glyphDetailCanvas, glyphData.gid, state.parsedFont);
+        renderGlyphDetailTable(refs.glyphDetailTable, glyphData.entries);
+        resetCopyButtons(refs, texts);
+        if (refs.glyphDetailOverlay) {
+            refs.glyphDetailOverlay.classList.add('open');
+        }
+    };
+}
+
+function resetCopyButtons(refs, texts) {
+    if (refs.glyphDetailCopyText) {
+        refs.glyphDetailCopyText.disabled = false;
+        refs.glyphDetailCopyText.textContent = texts.copyText;
+    }
+    if (refs.glyphDetailCopySvg) {
+        refs.glyphDetailCopySvg.disabled = false;
+        refs.glyphDetailCopySvg.textContent = texts.copySvg;
+    }
+}
+
+function updateCopyButtonState(button, ok, defaultLabel, successLabel, failLabel) {
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = ok ? successLabel : failLabel;
+    setTimeout(function () {
+        button.disabled = false;
+        button.textContent = defaultLabel;
+    }, 1200);
+}
+
+function showGlyphDetail(refs, state, glyphData) {
+    if (window.showGlyphDetail) {
+        window.showGlyphDetail(refs, state, glyphData);
+    }
+}
+
+function buildGlyphDetailData(gid, parsedFont) {
+    if (!parsedFont) return null;
+    var glyph = parsedFont.glyphs.get(gid);
+    if (!glyph) return null;
+
+    var metrics = glyph.getMetrics();
+    var entries = [];
+
+    entries.push({ key: 'Glyph ID', value: String(gid) });
+
+    if (glyph.name) {
+        entries.push({ key: 'Name', value: glyph.name });
+    }
+
+    if (glyph.unicodes && glyph.unicodes.length > 0) {
+        var unicodeStrs = glyph.unicodes.map(function (u) { return 'U+' + toHex(u); });
+        entries.push({ key: 'Unicode', value: unicodeStrs.join(', ') });
+
+        var chars = glyph.unicodes.map(function (u) {
+            try { return String.fromCodePoint(u); } catch (_) { return ''; }
+        }).filter(Boolean);
+        if (chars.length > 0) {
+            entries.push({ key: 'Character', value: chars.join(' ') });
+        }
+    }
+
+    entries.push({ key: 'Advance Width', value: String(metrics.advanceWidth) });
+    entries.push({ key: 'Left Bearing', value: String(metrics.leftSideBearing) });
+    entries.push({ key: 'Right Bearing', value: String(metrics.rightSideBearing) });
+    entries.push({ key: 'xMin', value: String(metrics.xMin) });
+    entries.push({ key: 'yMin', value: String(metrics.yMin) });
+    entries.push({ key: 'xMax', value: String(metrics.xMax) });
+    entries.push({ key: 'yMax', value: String(metrics.yMax) });
+
+    var svg = generateGlyphSvg(glyph, parsedFont);
+
+    return { gid: gid, entries: entries, svg: svg };
+}
+
+function generateGlyphSvg(glyph, parsedFont) {
+    try {
+        var unitsPerEm = parsedFont.unitsPerEm || 1000;
+        var path = glyph.getPath(0, 0, unitsPerEm);
+        var pathData = path.toPathData(2);
+        var metrics = glyph.getMetrics();
+
+        var padding = 40;
+        var minX = boundsOr(metrics.xMin, 0);
+        var minY = boundsOr(metrics.yMin, 0);
+        var maxX = boundsOr(metrics.xMax, 0);
+        var maxY = boundsOr(metrics.yMax, 0);
+
+        var viewBoxX = minX - padding;
+        var viewBoxY = -(maxY + padding);
+        var viewBoxW = (maxX - minX) + padding * 2;
+        var viewBoxH = (maxY - minY) + padding * 2;
+
+        if (viewBoxW < 1 || viewBoxH < 1) {
+            return null;
+        }
+
+        return '<svg xmlns="http://www.w3.org/2000/svg"' +
+            ' viewBox="' + viewBoxX + ' ' + viewBoxY + ' ' + viewBoxW + ' ' + viewBoxH + '"' +
+            ' width="' + viewBoxW + '" height="' + viewBoxH + '">' +
+            '<path d="' + pathData + '" fill="currentColor"/>' +
+            '</svg>';
+    } catch (_) {
+        return null;
+    }
+}
+
+function boundsOr(value, fallback) {
+    return Number.isFinite(value) ? value : fallback;
+}
+
+function renderGlyphDetailCanvas(canvas, gid, parsedFont) {
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    var glyph = parsedFont.glyphs.get(gid);
+    if (!glyph) return;
+
+    try {
+        var metrics = glyph.getMetrics();
+        var unitsPerEm = parsedFont.unitsPerEm || 1000;
+        var fontSize = 120;
+        var scale = fontSize / unitsPerEm;
+
+        var xMin = Number.isFinite(metrics.xMin) ? metrics.xMin : 0;
+        var xMax = Number.isFinite(metrics.xMax) ? metrics.xMax : 0;
+        var yMin = Number.isFinite(metrics.yMin) ? metrics.yMin : 0;
+        var yMax = Number.isFinite(metrics.yMax) ? metrics.yMax : 0;
+
+        var centerX = canvas.width / 2;
+        var centerY = canvas.height / 2;
+        var drawX = centerX - ((xMin + xMax) * scale) / 2;
+        var drawY = centerY + ((yMin + yMax) * scale) / 2;
+
+        var inkColor = readGlyphInkColor();
+        ctx.fillStyle = inkColor;
+
+        var width = (xMax - xMin) * scale;
+        var height = (yMax - yMin) * scale;
+        if (width > 0.5 || height > 0.5) {
+            glyph.draw(ctx, drawX, drawY, fontSize);
+        }
+
+        // Draw baseline, ascender, descender lines
+        var mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || 'rgba(245,247,250,0.68)';
+        ctx.lineWidth = 1;
+
+        var lines = [];
+        // Baseline at font y=0
+        lines.push({ y: drawY, label: 'baseline' });
+        // Ascender
+        if (parsedFont.ascender != null) {
+            lines.push({ y: drawY - parsedFont.ascender * scale, label: 'ascender' });
+        }
+        // Descender
+        if (parsedFont.descender != null) {
+            lines.push({ y: drawY - parsedFont.descender * scale, label: 'descender' });
+        }
+
+        lines.forEach(function (line) {
+            if (!Number.isFinite(line.y)) return;
+            ctx.strokeStyle = mutedColor;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(8, line.y);
+            ctx.lineTo(canvas.width - 8, line.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = mutedColor;
+            ctx.fillText(line.label, 10, line.y - 4);
+        });
+    } catch (_) {
+        ctx.fillStyle = readGlyphInkColor();
+        ctx.fillRect(70, 70, 20, 20);
+    }
+}
+
+function renderGlyphDetailTable(table, entries) {
+    if (!table) return;
+    table.textContent = '';
+
+    var fragment = document.createDocumentFragment();
+    entries.forEach(function (entry) {
+        var row = document.createElement('tr');
+
+        var keyCell = document.createElement('td');
+        keyCell.className = 'glyph-detail-key';
+        keyCell.textContent = entry.key;
+        row.appendChild(keyCell);
+
+        var valueCell = document.createElement('td');
+        valueCell.className = 'glyph-detail-value';
+        valueCell.textContent = entry.value;
+        row.appendChild(valueCell);
+
+        fragment.appendChild(row);
+    });
+    table.appendChild(fragment);
 }
 

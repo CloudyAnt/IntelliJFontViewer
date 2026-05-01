@@ -319,6 +319,12 @@ body {
     display: grid;
     gap: 8px;
     justify-items: center;
+    cursor: pointer;
+}
+
+.glyph-item:hover {
+    border-color: rgba(106, 166, 255, 0.55);
+    background: var(--surface-tab);
 }
 
 .glyph-canvas {
@@ -400,5 +406,152 @@ body {
     white-space: pre-wrap;
     word-break: break-word;
     user-select: text;
+}
+
+.glyph-detail-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.glyph-detail-overlay.open {
+    display: flex;
+}
+
+.glyph-detail-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.glyph-detail-dialog {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow), 0 24px 80px rgba(0, 0, 0, 0.3);
+    max-width: 480px;
+    width: calc(100vw - 48px);
+    max-height: calc(100vh - 64px);
+    display: grid;
+    gap: 0;
+    overflow: hidden;
+}
+
+.glyph-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 0;
+    gap: 12px;
+}
+
+.glyph-detail-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.glyph-detail-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.glyph-detail-close:hover {
+    color: var(--text);
+}
+
+.glyph-detail-body {
+    padding: 16px 24px;
+    display: grid;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.glyph-detail-preview {
+    display: flex;
+    justify-content: center;
+}
+
+.glyph-detail-preview canvas {
+    width: 160px;
+    height: 160px;
+    border: 1px dashed var(--canvas-border);
+    border-radius: 10px;
+    background: var(--surface-canvas);
+}
+
+.glyph-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.glyph-detail-table tr {
+    border-bottom: 1px solid var(--line-border);
+}
+
+.glyph-detail-table tr:last-child {
+    border-bottom: none;
+}
+
+.glyph-detail-table td {
+    padding: 8px 0;
+    font-size: 13px;
+    vertical-align: top;
+}
+
+.glyph-detail-table .glyph-detail-key {
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 11px;
+    width: 120px;
+    padding-right: 12px;
+}
+
+.glyph-detail-table .glyph-detail-value {
+    color: var(--text);
+    word-break: break-word;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+}
+
+.glyph-detail-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 24px 20px;
+}
+
+.glyph-detail-action-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-input);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.glyph-detail-action-btn:hover {
+    background: var(--surface-tab);
+    border-color: rgba(106, 166, 255, 0.6);
+}
+
+.glyph-detail-action-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
 }
 

@@ -98,6 +98,28 @@
             <div id="metadata-list" class="metadata-list"></div>
         </section>
     </main>
+
+    <div id="glyph-detail-overlay" class="glyph-detail-overlay">
+        <div class="glyph-detail-backdrop"></div>
+        <div class="glyph-detail-dialog">
+            <div class="glyph-detail-header">
+                <h2 class="glyph-detail-title">__TEXT_GLYPH_DETAIL_TITLE__</h2>
+                <button id="glyph-detail-close" class="glyph-detail-close" type="button" aria-label="__TEXT_GLYPH_DETAIL_CLOSE__">&times;</button>
+            </div>
+            <div class="glyph-detail-body">
+                <div class="glyph-detail-preview">
+                    <canvas id="glyph-detail-canvas" width="160" height="160"></canvas>
+                </div>
+                <table id="glyph-detail-table" class="glyph-detail-table">
+                </table>
+            </div>
+            <div class="glyph-detail-actions">
+                <button id="glyph-detail-copy-text" class="glyph-detail-action-btn" type="button">__TEXT_GLYPH_DETAIL_COPY_TEXT__</button>
+                <button id="glyph-detail-copy-svg" class="glyph-detail-action-btn" type="button">__TEXT_GLYPH_DETAIL_COPY_SVG__</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         __JS__
     </script>
