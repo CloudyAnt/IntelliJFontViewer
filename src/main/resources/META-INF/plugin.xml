@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>cn.itscloudy.fontviewer</id>
     <name>FontViewer</name>
-    <vendor url="https://cloudant.github.io">Jakey CHAI</vendor>
+    <vendor url="https://cloudant.github.io" email="iiim.cloudy@gmail.com">Jakey CHAI</vendor>
 
     <description><![CDATA[
         <h1>FontViewer</h1>
