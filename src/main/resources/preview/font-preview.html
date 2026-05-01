@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="__INITIAL_THEME__">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        @font-face {
+            font-family: 'FontViewerPreview';
+            src: url('__FONT_DATA_URL__') format('__FONT_CSS_FORMAT__');
+            font-display: block;
+        }
+
+        __CSS__
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="card header">
+            <div>
+                <h1 class="title">__PREVIEW_TITLE__</h1>
+                <div class="subtitle">__TEXT_SUBTITLE__</div>
+            </div>
+            <div class="badge">__FILE_EXTENSION__</div>
+        </section>
+
+        <section class="card">
+            <div class="tab-buttons">
+                <button class="tab-button active" type="button" data-tab="overview">__TAB_OVERVIEW__</button>
+                <button class="tab-button" type="button" data-tab="pua">__TAB_PUA__</button>
+                <button class="tab-button" type="button" data-tab="glyph-index">__TAB_GLYPH_INDEX__</button>
+                <button class="tab-button" type="button" data-tab="metadata">__TAB_METADATA__</button>
+            </div>
+        </section>
+
+        <section class="tab-panel active" data-tab-panel="overview">
+            <section class="card controls">
+                <label class="controls-label" for="custom-preview-input">__TEXT_CUSTOM_PREVIEW_LABEL__</label>
+                <input id="custom-preview-input" class="preview-input" type="text" value="__DEFAULT_PREVIEW_TEXT__" placeholder="__TEXT_CUSTOM_PREVIEW_PLACEHOLDER__" />
+                <div class="controls-hint">__TEXT_CUSTOM_PREVIEW_HINT__</div>
+            </section>
+
+            <section class="card">
+                <div class="section-title">__TEXT_HEADLINE__</div>
+                <p class="hero sample-font" data-preview-target="true">__DEFAULT_PREVIEW_TEXT__</p>
+            </section>
+
+            <section class="grid">
+                <section class="card">
+                    <div class="section-title">__TEXT_PARAGRAPH__</div>
+                    <p class="paragraph sample-font" data-preview-target="true">__DEFAULT_PREVIEW_TEXT__</p>
+                </section>
+
+                <section class="card glyphs">
+                    <div class="section-title">__TEXT_GLYPH_SET__</div>
+                    <div class="glyph-line sample-font">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+                    <div class="glyph-line sample-font">abcdefghijklmnopqrstuvwxyz</div>
+                    <div class="glyph-line sample-font">0123456789 !@#$%^&amp;*()[]{}&lt;&gt;?/\\|</div>
+                </section>
+            </section>
+
+            <section class="card sizes">
+                <div class="section-title">__TEXT_SIZE_SCALE__</div>
+                __SIZE_ROWS__
+            </section>
+
+            <section class="footer">__TEXT_FOOTER__</section>
+        </section>
+
+        <section class="card tab-panel" data-tab-panel="pua">
+            <div class="section-title">__TEXT_PUA_TITLE__</div>
+            <div class="pua-toolbar">
+                <button id="pua-prev" class="pua-action" type="button">__TEXT_PREVIOUS__</button>
+                <button id="pua-next" class="pua-action" type="button">__TEXT_NEXT__</button>
+                <span id="pua-range" class="pua-range"></span>
+            </div>
+            <div class="controls-hint">__TEXT_PUA_HINT__</div>
+            <div id="pua-grid" class="pua-grid"></div>
+        </section>
+
+        <section class="card tab-panel" data-tab-panel="glyph-index">
+            <div class="section-title">__TEXT_GLYPH_INDEX_TITLE__</div>
+            <div class="glyph-toolbar">
+                <button id="glyph-prev" class="pua-action" type="button">__TEXT_PREVIOUS__</button>
+                <button id="glyph-next" class="pua-action" type="button">__TEXT_NEXT__</button>
+                <span id="glyph-range" class="pua-range"></span>
+            </div>
+            <div id="glyph-status" class="controls-hint">__TEXT_GLYPH_LOADING__</div>
+            <div id="glyph-grid" class="glyph-grid"></div>
+        </section>
+
+        <section class="card tab-panel" data-tab-panel="metadata">
+            <div class="metadata-header">
+                <div class="section-title">__TEXT_METADATA_TITLE__</div>
+                <button id="metadata-copy-all" class="metadata-copy" type="button">__TEXT_METADATA_COPY_ALL__</button>
+            </div>
+            <div class="controls-hint">__TEXT_METADATA_HINT__</div>
+            <div id="metadata-status" class="controls-hint">__TEXT_METADATA_EMPTY__</div>
+            <div id="metadata-list" class="metadata-list"></div>
+        </section>
+    </main>
+    <script>
+        __JS__
+    </script>
+</body>
+</html>

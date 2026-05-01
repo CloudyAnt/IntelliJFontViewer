@@ -1,0 +1,15 @@
+/*
+
+!.run
+!gradle
+!src
+!.gitignore
+!.gctpattern
+!build.gradle.kts
+!gradle.properties
+!settings.gradle.kts
+!gradlew
+!gradlew.bat
+!README.md
+!FontViewer.iml
+!.kotlin

@@ -1,0 +1,24 @@
+<idea-plugin>
+    <id>cn.itscloudy.FontViewer</id>
+    <name>FontViewer</name>
+    <vendor url="https://cloudant.github.io">Jakey CHAI</vendor>
+
+    <description><![CDATA[
+        <h1>FontViewer</h1>
+        <p>A font viewer plugin, supports TTF/OTF and WOFF/WOFF2</p>
+        ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <resource-bundle>messages.MyMessageBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+                name="FontViewerFont"
+                implementationClass="cn.itscloudy.fontviewer.FontViewerFileType"
+                fieldName="INSTANCE"
+                extensions="ttf;otf;woff;woff2"/>
+        <fileEditorProvider implementation="cn.itscloudy.fontviewer.editor.MyFileEditorProvider"/>
+    </extensions>
+
+</idea-plugin>
