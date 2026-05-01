@@ -12,7 +12,7 @@
             <li>Font metadata from the name table with clipboard support</li>
             <li>Follows the IDE light/dark theme</li>
         </ul>
-        Licensed under <b>MIT License</b>.
+        Licensed under <b>Apache 2.0 License</b>.
         ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
