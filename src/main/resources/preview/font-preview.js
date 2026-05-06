@@ -22,6 +22,10 @@
     const textGlyphDetailCopySvg = __TEXT_GLYPH_DETAIL_COPY_SVG_LITERAL__;
     const textGlyphDetailCopied = __TEXT_GLYPH_DETAIL_COPIED_LITERAL__;
     const textGlyphDetailCopyFailed = __TEXT_GLYPH_DETAIL_COPY_FAILED_LITERAL__;
+    const textFeaturesLoading = __TEXT_FEATURES_LOADING_LITERAL__;
+    const textFeaturesEmpty = __TEXT_FEATURES_EMPTY_LITERAL__;
+    const textFeaturesUnavailable = __TEXT_FEATURES_UNAVAILABLE_LITERAL__;
+    const textPlaygroundDefault = __TEXT_PLAYGROUND_DEFAULT_LITERAL__;
 
     const applyTheme = (theme) => {
         const normalizedTheme = theme === 'light' ? 'light' : 'dark';
@@ -56,6 +60,16 @@
         glyphDetailTable: document.getElementById('glyph-detail-table'),
         glyphDetailCopyText: document.getElementById('glyph-detail-copy-text'),
         glyphDetailCopySvg: document.getElementById('glyph-detail-copy-svg'),
+        featuresGrid: document.getElementById('features-grid'),
+        featuresStatus: document.getElementById('features-status'),
+        featuresReset: document.getElementById('features-reset'),
+        playgroundInput: document.getElementById('playground-input'),
+        propFontSize: document.getElementById('prop-font-size'),
+        propLineHeight: document.getElementById('prop-line-height'),
+        propLetterSpacing: document.getElementById('prop-letter-spacing'),
+        propFontSizeVal: document.getElementById('prop-font-size-val'),
+        propLineHeightVal: document.getElementById('prop-line-height-val'),
+        propLetterSpacingVal: document.getElementById('prop-letter-spacing-val'),
     };
 
     const state = {
@@ -69,6 +83,11 @@
         glyphPageStart: 0,
         glyphCount: 0,
         parsedFont: null,
+        featureTags: null,
+        featureSettings: {},
+        playgroundFontSize: 48,
+        playgroundLineHeight: 1.2,
+        playgroundLetterSpacing: 0,
     };
 
     if (!refs.input || refs.targets.length === 0) {
@@ -76,7 +95,7 @@
     }
 
     initPreviewText(refs, defaultText);
-    initTabs(refs);
+    initTabs(refs, state);
     initMetadata(refs, metadataEntries, {
         empty: textMetadataEmpty,
         copy: textMetadataCopy,
@@ -101,6 +120,12 @@
         copied: textGlyphDetailCopied,
         copyFailed: textGlyphDetailCopyFailed,
     });
+    initFeatures(refs, state, {
+        loading: textFeaturesLoading,
+        empty: textFeaturesEmpty,
+        unavailable: textFeaturesUnavailable,
+    });
+    initPlayground(refs, state, textPlaygroundDefault);
 })();
 
 function initMetadata(refs, metadataEntries, texts) {
@@ -203,7 +228,7 @@ function initPreviewText(refs, defaultText) {
     applyPreviewText(refs.input.value);
 }
 
-function initTabs(refs) {
+function initTabs(refs, state) {
     refs.tabButtons.forEach((button) => {
         button.addEventListener('click', () => {
             const activeTab = button.getAttribute('data-tab');
@@ -214,6 +239,7 @@ function initTabs(refs) {
             if (panel) {
                 panel.classList.add('active');
             }
+            applyFeatureSettings(state);
         });
     });
 }
@@ -389,6 +415,8 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
             const buffer = await response.arrayBuffer();
             state.parsedFont = window.opentype.parse(buffer);
             state.glyphCount = state.parsedFont.numGlyphs || (state.parsedFont.glyphs ? state.parsedFont.glyphs.length : 0);
+            extractFeatureTags(state);
+            renderFeaturesTab(refs, state, texts);
             if (!state.glyphCount || state.glyphCount <= 0) {
                 setGlyphStatus(texts.noGlyphData);
                 renderGlyphPage();
@@ -516,6 +544,202 @@ function readGlyphInkColor() {
 
 function toHex(value) {
     return value.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function featureSpecUrl(tag) {
+    var first = tag.charAt(0);
+    var page;
+    if (first >= 'a' && first <= 'e') {
+        page = 'features_ae';
+    } else if (first >= 'f' && first <= 'j') {
+        page = 'features_fj';
+    } else if (first >= 'k' && first <= 'o') {
+        page = 'features_ko';
+    } else if (first >= 'p' && first <= 't') {
+        page = 'features_pt';
+    } else {
+        page = 'features_uz';
+    }
+    return 'https://learn.microsoft.com/en-us/typography/opentype/spec/' + page + '?source=recommendations#tag-' + tag;
+}
+
+function extractFeatureTags(state) {
+    if (!state.parsedFont) {
+        state.featureTags = null;
+        return;
+    }
+    var tags = Object.create(null);
+    try {
+        var gsubFeatures = state.parsedFont.tables && state.parsedFont.tables.gsub && state.parsedFont.tables.gsub.features;
+        var gposFeatures = state.parsedFont.tables && state.parsedFont.tables.gpos && state.parsedFont.tables.gpos.features;
+        var allFeatures = [].concat(
+            Array.isArray(gsubFeatures) ? gsubFeatures : [],
+            Array.isArray(gposFeatures) ? gposFeatures : []
+        );
+        for (var i = 0; i < allFeatures.length; i += 1) {
+            var tag = allFeatures[i].tag;
+            if (typeof tag === 'string' && tag.length === 4) {
+                tags[tag] = true;
+            }
+        }
+        var tagList = Object.keys(tags).sort();
+        state.featureTags = tagList.length > 0 ? tagList : null;
+    } catch (_ignored) {
+        state.featureTags = null;
+    }
+}
+
+function renderFeaturesTab(refs, state, texts) {
+    if (!refs.featuresGrid || !refs.featuresStatus) {
+        return;
+    }
+
+    if (state.featureTags === null) {
+        refs.featuresGrid.textContent = '';
+        return;
+    }
+
+    if (state.featureTags.length === 0) {
+        refs.featuresGrid.textContent = '';
+        refs.featuresStatus.textContent = texts.empty;
+        return;
+    }
+
+    refs.featuresStatus.textContent = state.featureTags.length + ' feature' + (state.featureTags.length > 1 ? 's' : '');
+
+    var fragment = document.createDocumentFragment();
+    for (var i = 0; i < state.featureTags.length; i += 1) {
+        var tag = state.featureTags[i];
+        var isOn = !!state.featureSettings[tag];
+
+        var item = document.createElement('label');
+        item.className = 'feature-item';
+
+        var link = document.createElement('a');
+        link.className = 'feature-tag';
+        link.textContent = tag;
+        link.href = featureSpecUrl(tag);
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.title = 'OpenType spec for \'' + tag + '\'';
+        item.appendChild(link);
+
+        var toggle = document.createElement('span');
+        toggle.className = 'feature-toggle';
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isOn;
+        checkbox.addEventListener('change', function (t) {
+            return function () {
+                if (this.checked) {
+                    state.featureSettings[t] = true;
+                } else {
+                    delete state.featureSettings[t];
+                }
+                applyFeatureSettings(state);
+            };
+        }(tag));
+
+        var slider = document.createElement('span');
+        slider.className = 'toggle-slider';
+
+        toggle.appendChild(checkbox);
+        toggle.appendChild(slider);
+        item.appendChild(toggle);
+        fragment.appendChild(item);
+    }
+
+    refs.featuresGrid.textContent = '';
+    refs.featuresGrid.appendChild(fragment);
+}
+
+function isPlaygroundActive() {
+    var panel = document.querySelector('[data-tab-panel="playground"]');
+    return panel && panel.classList.contains('active');
+}
+
+function applyFeatureSettings(state) {
+    var parts = [];
+    var keys = Object.keys(state.featureSettings);
+    for (var i = 0; i < keys.length; i += 1) {
+        if (state.featureSettings[keys[i]]) {
+            parts.push('"' + keys[i] + '" 1');
+        }
+    }
+    var value = (parts.length > 0 && isPlaygroundActive()) ? parts.join(', ') : '';
+    document.body.style.fontFeatureSettings = value;
+    var input = document.getElementById('playground-input');
+    if (input) {
+        input.style.fontFeatureSettings = value;
+    }
+}
+
+function initFeatures(refs, state, texts) {
+    if (!refs.featuresGrid || !refs.featuresStatus || !refs.featuresReset) {
+        return;
+    }
+
+    refs.featuresGrid.textContent = '';
+    refs.featuresStatus.textContent = texts.loading;
+
+    refs.featuresReset.addEventListener('click', function () {
+        state.featureSettings = {};
+        applyFeatureSettings(state);
+        if (state.featureTags && state.featureTags.length > 0) {
+            renderFeaturesTab(refs, state, texts);
+        }
+    });
+}
+
+function applyPlaygroundStyles(refs, state) {
+    var input = refs.playgroundInput;
+    if (!input) return;
+    input.style.fontSize = state.playgroundFontSize + 'px';
+    input.style.lineHeight = String(state.playgroundLineHeight);
+    input.style.letterSpacing = state.playgroundLetterSpacing + 'em';
+}
+
+function initPlayground(refs, state, defaultText) {
+    var input = refs.playgroundInput;
+    if (!input) return;
+
+    input.value = defaultText;
+
+    input.addEventListener('input', function () {
+        if (input.value.trim().length === 0) {
+            input.value = '';
+        }
+    });
+
+    // Font size slider
+    if (refs.propFontSize && refs.propFontSizeVal) {
+        refs.propFontSize.addEventListener('input', function () {
+            state.playgroundFontSize = parseInt(this.value, 10);
+            refs.propFontSizeVal.textContent = state.playgroundFontSize + 'px';
+            applyPlaygroundStyles(refs, state);
+        });
+    }
+
+    // Line height slider
+    if (refs.propLineHeight && refs.propLineHeightVal) {
+        refs.propLineHeight.addEventListener('input', function () {
+            state.playgroundLineHeight = parseInt(this.value, 10) / 100;
+            refs.propLineHeightVal.textContent = state.playgroundLineHeight.toFixed(2);
+            applyPlaygroundStyles(refs, state);
+        });
+    }
+
+    // Letter spacing slider
+    if (refs.propLetterSpacing && refs.propLetterSpacingVal) {
+        refs.propLetterSpacing.addEventListener('input', function () {
+            state.playgroundLetterSpacing = parseInt(this.value, 10) / 100;
+            refs.propLetterSpacingVal.textContent = state.playgroundLetterSpacing.toFixed(2) + 'em';
+            applyPlaygroundStyles(refs, state);
+        });
+    }
+
+    applyPlaygroundStyles(refs, state);
 }
 
 function initGlyphDetail(refs, state, texts) {
@@ -684,7 +908,7 @@ function renderGlyphDetailCanvas(canvas, gid, parsedFont) {
     try {
         var metrics = glyph.getMetrics();
         var unitsPerEm = parsedFont.unitsPerEm || 1000;
-        var fontSize = 120;
+        var fontSize = 180;
         var scale = fontSize / unitsPerEm;
 
         var xMin = Number.isFinite(metrics.xMin) ? metrics.xMin : 0;

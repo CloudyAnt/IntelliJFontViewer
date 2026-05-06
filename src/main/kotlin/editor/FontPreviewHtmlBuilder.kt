@@ -41,6 +41,10 @@ object FontPreviewHtmlBuilder {
             .replace("__TEXT_GLYPH_DETAIL_COPY_SVG_LITERAL__", jsMessageLiteral("preview.glyph.detail.copySvg"))
             .replace("__TEXT_GLYPH_DETAIL_COPIED_LITERAL__", jsMessageLiteral("preview.glyph.detail.copied"))
             .replace("__TEXT_GLYPH_DETAIL_COPY_FAILED_LITERAL__", jsMessageLiteral("preview.glyph.detail.copyFailed"))
+            .replace("__TEXT_FEATURES_LOADING_LITERAL__", jsMessageLiteral("preview.features.loading"))
+            .replace("__TEXT_FEATURES_EMPTY_LITERAL__", jsMessageLiteral("preview.features.empty"))
+            .replace("__TEXT_FEATURES_UNAVAILABLE_LITERAL__", jsMessageLiteral("preview.features.unavailable"))
+            .replace("__TEXT_PLAYGROUND_DEFAULT_LITERAL__", jsMessageLiteral("preview.playground.default"))
 
         return htmlTemplate
             .replace("__FONT_DATA_URL__", StringUtil.escapeXmlEntities(fontDataUrl))
@@ -59,6 +63,7 @@ object FontPreviewHtmlBuilder {
             .replace("__TAB_OVERVIEW__", xmlMessage("preview.tab.overview"))
             .replace("__TAB_PUA__", xmlMessage("preview.tab.pua"))
             .replace("__TAB_GLYPH_INDEX__", xmlMessage("preview.tab.glyphIndex"))
+            .replace("__TAB_PLAYGROUND__", xmlMessage("preview.tab.playground"))
             .replace("__TAB_METADATA__", xmlMessage("preview.tab.metadata"))
             .replace("__TEXT_HEADLINE__", xmlMessage("preview.section.headline"))
             .replace("__TEXT_PARAGRAPH__", xmlMessage("preview.section.paragraph"))
@@ -79,6 +84,15 @@ object FontPreviewHtmlBuilder {
             .replace("__TEXT_GLYPH_DETAIL_CLOSE__", xmlMessage("preview.glyph.detail.close"))
             .replace("__TEXT_GLYPH_DETAIL_COPY_TEXT__", xmlMessage("preview.glyph.detail.copyText"))
             .replace("__TEXT_GLYPH_DETAIL_COPY_SVG__", xmlMessage("preview.glyph.detail.copySvg"))
+            .replace("__TEXT_FEATURES_TITLE__", xmlMessage("preview.features.title"))
+            .replace("__TEXT_FEATURES_HINT__", xmlMessage("preview.features.hint"))
+            .replace("__TEXT_FEATURES_RESET__", xmlMessage("preview.features.reset"))
+            .replace("__TEXT_PROPERTIES_TITLE__", xmlMessage("preview.properties.title"))
+            .replace("__TEXT_PROPERTY_FONT_SIZE__", xmlMessage("preview.property.fontSize"))
+            .replace("__TEXT_PROPERTY_LINE_HEIGHT__", xmlMessage("preview.property.lineHeight"))
+            .replace("__TEXT_PROPERTY_LETTER_SPACING__", xmlMessage("preview.property.letterSpacing"))
+            .replace("__TEXT_PLAYGROUND_PLACEHOLDER__", xmlMessage("preview.playground.placeholder"))
+            .replace("__TEXT_PLAYGROUND_DEFAULT__", xmlMessage("preview.playground.default"))
     }
 
     private fun metadataEntriesAsJsLiteral(entries: List<FontMetadataParser.MetadataEntry>): String {

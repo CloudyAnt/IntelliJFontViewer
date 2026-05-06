@@ -26,6 +26,7 @@
         <section class="card">
             <div class="tab-buttons">
                 <button class="tab-button active" type="button" data-tab="overview">__TAB_OVERVIEW__</button>
+                <button class="tab-button" type="button" data-tab="playground">__TAB_PLAYGROUND__</button>
                 <button class="tab-button" type="button" data-tab="pua">__TAB_PUA__</button>
                 <button class="tab-button" type="button" data-tab="glyph-index">__TAB_GLYPH_INDEX__</button>
                 <button class="tab-button" type="button" data-tab="metadata">__TAB_METADATA__</button>
@@ -88,6 +89,41 @@
             <div id="glyph-grid" class="glyph-grid"></div>
         </section>
 
+        <section class="tab-panel playground-layout" data-tab-panel="playground">
+            <div class="playground-block">
+                <div class="features-toolbar">
+                    <div class="section-title">__TEXT_FEATURES_TITLE__</div>
+                    <span id="features-status" class="features-status"></span>
+                    <button id="features-reset" class="pua-action" type="button">__TEXT_FEATURES_RESET__</button>
+                </div>
+                <div class="controls-hint">__TEXT_FEATURES_HINT__</div>
+                <div id="features-grid" class="features-grid"></div>
+            </div>
+
+            <div class="playground-block">
+                <div class="section-title">__TEXT_PROPERTIES_TITLE__</div>
+                <div class="property-row">
+                    <span class="property-label">__TEXT_PROPERTY_FONT_SIZE__</span>
+                    <input id="prop-font-size" class="property-slider" type="range" min="8" max="200" value="48" />
+                    <span id="prop-font-size-val" class="property-value">48px</span>
+                </div>
+                <div class="property-row">
+                    <span class="property-label">__TEXT_PROPERTY_LINE_HEIGHT__</span>
+                    <input id="prop-line-height" class="property-slider" type="range" min="100" max="300" value="120" step="5" />
+                    <span id="prop-line-height-val" class="property-value">1.2</span>
+                </div>
+                <div class="property-row">
+                    <span class="property-label">__TEXT_PROPERTY_LETTER_SPACING__</span>
+                    <input id="prop-letter-spacing" class="property-slider" type="range" min="-10" max="50" value="0" step="1" />
+                    <span id="prop-letter-spacing-val" class="property-value">0em</span>
+                </div>
+            </div>
+
+            <div class="playground-block">
+                <textarea id="playground-input" class="playground-textarea sample-font" placeholder="__TEXT_PLAYGROUND_PLACEHOLDER__">__TEXT_PLAYGROUND_DEFAULT__</textarea>
+            </div>
+        </section>
+
         <section class="card tab-panel" data-tab-panel="metadata">
             <div class="metadata-header">
                 <div class="section-title">__TEXT_METADATA_TITLE__</div>
@@ -97,6 +133,7 @@
             <div id="metadata-status" class="controls-hint">__TEXT_METADATA_EMPTY__</div>
             <div id="metadata-list" class="metadata-list"></div>
         </section>
+
     </main>
 
     <div id="glyph-detail-overlay" class="glyph-detail-overlay">
@@ -108,7 +145,7 @@
             </div>
             <div class="glyph-detail-body">
                 <div class="glyph-detail-preview">
-                    <canvas id="glyph-detail-canvas" width="160" height="160"></canvas>
+                    <canvas id="glyph-detail-canvas" width="240" height="240"></canvas>
                 </div>
                 <table id="glyph-detail-table" class="glyph-detail-table">
                 </table>
