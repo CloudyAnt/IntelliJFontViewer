@@ -1,4 +1,4 @@
-# Cloudy Font Viewer
+# IntelliJ Font Viewer
 
 An IntelliJ Platform plugin for previewing local font files inside the IDE — no external tools needed.
 
