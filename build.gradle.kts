@@ -43,7 +43,8 @@ intellijPlatform {
 
         changeNotes = """
             <b>0.0.1</b> Initial version. Contains Overview, PUA, GlyphIndex and Metadata tabs.<br>
-            <b>0.1.0</b> Add Playground tab to preview OpenType features and test custom text input.
+            <b>0.1.0</b> Add Playground tab to preview OpenType features and test custom text input.<br>
+            <b>0.1.1</b> Fix a little compatible problem.
         """.trimIndent()
     }
 }
