@@ -194,6 +194,62 @@ body {
     font-weight: 600;
 }
 
+.controls-label-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+    cursor: help;
+    flex-shrink: 0;
+}
+
+.info-icon:hover,
+.info-icon:focus-visible {
+    color: var(--accent);
+    outline: none;
+}
+
+.info-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 280px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--dialog-bg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    line-height: 1.45;
+    white-space: normal;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, visibility 0.15s;
+    z-index: 100;
+}
+
+.info-icon:hover .info-tooltip,
+.info-icon:focus-visible .info-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
 .preview-input {
     width: 100%;
     padding: 12px 14px;
@@ -748,5 +804,21 @@ body {
 .playground-textarea::placeholder {
     color: var(--muted);
     opacity: 0.5;
+}
+
+.playground-display {
+    width: 100%;
+    min-height: 60px;
+    padding: 16px;
+    border: 1px solid var(--item-border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font-size: 48px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 

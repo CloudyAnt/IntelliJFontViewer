@@ -60,6 +60,7 @@ object FontPreviewHtmlBuilder {
             .replace("__TEXT_CUSTOM_PREVIEW_LABEL__", xmlMessage("preview.controls.label"))
             .replace("__TEXT_CUSTOM_PREVIEW_PLACEHOLDER__", xmlMessage("preview.controls.placeholder"))
             .replace("__TEXT_CUSTOM_PREVIEW_HINT__", xmlMessage("preview.controls.hint"))
+            .replace("__TEXT_UNICODE_HINT__", xmlMessage("preview.controls.unicodeHint"))
             .replace("__TAB_OVERVIEW__", xmlMessage("preview.tab.overview"))
             .replace("__TAB_PUA__", xmlMessage("preview.tab.pua"))
             .replace("__TAB_GLYPH_INDEX__", xmlMessage("preview.tab.glyphIndex"))

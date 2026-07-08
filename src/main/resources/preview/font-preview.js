@@ -64,6 +64,7 @@
         featuresStatus: document.getElementById('features-status'),
         featuresReset: document.getElementById('features-reset'),
         playgroundInput: document.getElementById('playground-input'),
+        playgroundDisplay: document.getElementById('playground-display'),
         propFontSize: document.getElementById('prop-font-size'),
         propLineHeight: document.getElementById('prop-line-height'),
         propLetterSpacing: document.getElementById('prop-letter-spacing'),
@@ -218,7 +219,8 @@ function initMetadata(refs, metadataEntries, texts) {
 
 function initPreviewText(refs, defaultText) {
     const applyPreviewText = (value) => {
-        const text = value.trim().length > 0 ? value : defaultText;
+        const rawText = value.trim().length > 0 ? value : defaultText;
+        const text = resolveUnicodeEscapes(rawText);
         refs.targets.forEach((element) => {
             element.textContent = text;
         });
@@ -546,6 +548,26 @@ function toHex(value) {
     return value.toString(16).toUpperCase().padStart(4, '0');
 }
 
+function resolveUnicodeEscapes(str) {
+    if (typeof str !== 'string' || str.length === 0) return str;
+    return str.replace(/\\u([0-9a-fA-F]{4})|\\U([0-9a-fA-F]{8})/g, function (match, u4, u8) {
+        var codePoint;
+        if (u4) {
+            codePoint = parseInt(u4, 16);
+        } else {
+            codePoint = parseInt(u8, 16);
+        }
+        if (codePoint > 0x10FFFF || (codePoint >= 0xD800 && codePoint <= 0xDFFF)) {
+            return match;
+        }
+        try {
+            return String.fromCodePoint(codePoint);
+        } catch (_ignored) {
+            return match;
+        }
+    });
+}
+
 function featureSpecUrl(tag) {
     var first = tag.charAt(0);
     var page;
@@ -670,8 +692,12 @@ function applyFeatureSettings(state) {
     var value = (parts.length > 0 && isPlaygroundActive()) ? parts.join(', ') : '';
     document.body.style.fontFeatureSettings = value;
     var input = document.getElementById('playground-input');
+    var display = document.getElementById('playground-display');
     if (input) {
         input.style.fontFeatureSettings = value;
+    }
+    if (display) {
+        display.style.fontFeatureSettings = value;
     }
 }
 
@@ -694,22 +720,37 @@ function initFeatures(refs, state, texts) {
 
 function applyPlaygroundStyles(refs, state) {
     var input = refs.playgroundInput;
+    var display = refs.playgroundDisplay;
     if (!input) return;
     input.style.fontSize = state.playgroundFontSize + 'px';
     input.style.lineHeight = String(state.playgroundLineHeight);
     input.style.letterSpacing = state.playgroundLetterSpacing + 'em';
+    if (display) {
+        display.style.fontSize = state.playgroundFontSize + 'px';
+        display.style.lineHeight = String(state.playgroundLineHeight);
+        display.style.letterSpacing = state.playgroundLetterSpacing + 'em';
+    }
 }
 
 function initPlayground(refs, state, defaultText) {
     var input = refs.playgroundInput;
+    var display = refs.playgroundDisplay;
     if (!input) return;
 
     input.value = defaultText;
+
+    var updateDisplay = function () {
+        if (display) {
+            var raw = input.value.trim().length > 0 ? input.value : '';
+            display.textContent = resolveUnicodeEscapes(raw);
+        }
+    };
 
     input.addEventListener('input', function () {
         if (input.value.trim().length === 0) {
             input.value = '';
         }
+        updateDisplay();
     });
 
     // Font size slider
@@ -740,6 +781,7 @@ function initPlayground(refs, state, defaultText) {
     }
 
     applyPlaygroundStyles(refs, state);
+    updateDisplay();
 }
 
 function initGlyphDetail(refs, state, texts) {
