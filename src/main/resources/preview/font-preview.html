@@ -26,7 +26,6 @@
             <div class="tab-buttons">
                 <button class="tab-button active" type="button" data-tab="overview">__TAB_OVERVIEW__</button>
                 <button class="tab-button" type="button" data-tab="playground">__TAB_PLAYGROUND__</button>
-                <button class="tab-button" type="button" data-tab="pua">__TAB_PUA__</button>
                 <button class="tab-button" type="button" data-tab="glyph-index">__TAB_GLYPH_INDEX__</button>
                 <button class="tab-button" type="button" data-tab="metadata">__TAB_METADATA__</button>
             </div>
@@ -74,23 +73,13 @@
             <section class="footer">__TEXT_FOOTER__</section>
         </section>
 
-        <section class="card tab-panel" data-tab-panel="pua">
-            <div class="section-title">__TEXT_PUA_TITLE__</div>
-            <div class="pua-toolbar">
-                <button id="pua-prev" class="pua-action" type="button">__TEXT_PREVIOUS__</button>
-                <button id="pua-next" class="pua-action" type="button">__TEXT_NEXT__</button>
-                <span id="pua-range" class="pua-range"></span>
-            </div>
-            <div class="controls-hint">__TEXT_PUA_HINT__</div>
-            <div id="pua-grid" class="pua-grid"></div>
-        </section>
-
         <section class="card tab-panel" data-tab-panel="glyph-index">
             <div class="section-title">__TEXT_GLYPH_INDEX_TITLE__</div>
             <div class="glyph-toolbar">
                 <select id="glyph-filter-mode" class="glyph-filter-select">
                     <option value="none">__TEXT_GLYPH_FILTER_MODE_NONE__</option>
                     <option value="unicodeBlock">__TEXT_GLYPH_FILTER_MODE_UNICODE_BLOCK__</option>
+                    <option value="pua">__TEXT_GLYPH_FILTER_MODE_PUA__</option>
                     <option value="customRange">__TEXT_GLYPH_FILTER_MODE_CUSTOM_RANGE__</option>
                     <option value="exactUnicode">__TEXT_GLYPH_FILTER_MODE_EXACT_UNICODE__</option>
                 </select>

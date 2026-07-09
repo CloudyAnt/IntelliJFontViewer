@@ -4,7 +4,6 @@
     const initialTheme = __INITIAL_THEME_LITERAL__;
     const metadataEntries = __METADATA_ENTRIES_LITERAL__;
     const mappedPuaCodePoints = __MAPPED_PUA_LITERAL__;
-    const textNoMappedPua = __TEXT_NO_MAPPED_PUA_LITERAL__;
     const textNoGlyphData = __TEXT_NO_GLYPH_DATA_LITERAL__;
     const textLoadingOpentype = __TEXT_LOADING_OPENTYPE_LITERAL__;
     const textOpentypeUnavailable = __TEXT_OPENTYPE_UNAVAILABLE_LITERAL__;
@@ -14,6 +13,9 @@
     const textGlyphSearchNoResults = __TEXT_GLYPH_SEARCH_NO_RESULTS_LITERAL__;
     const textGlyphFilterPresetPlaceholder = __TEXT_GLYPH_FILTER_PRESET_PLACEHOLDER_LITERAL__;
     const textGlyphFilterInvalidRange = __TEXT_GLYPH_FILTER_INVALID_RANGE_LITERAL__;
+    const textNoMappedPua = __TEXT_NO_MAPPED_PUA_LITERAL__;
+    const textPuaHint = __TEXT_PUA_HINT_LITERAL__;
+    const textGlyphFilterPuaLabel = __TEXT_GLYPH_FILTER_PUA_LABEL_LITERAL__;
     const textMetadataEmpty = __TEXT_METADATA_EMPTY_LITERAL__;
     const textMetadataCopy = __TEXT_METADATA_COPY_LITERAL__;
     const textMetadataCopyAll = __TEXT_METADATA_COPY_ALL_LITERAL__;
@@ -44,10 +46,6 @@
         targets: document.querySelectorAll('[data-preview-target="true"]'),
         tabButtons: document.querySelectorAll('[data-tab]'),
         tabPanels: document.querySelectorAll('[data-tab-panel]'),
-        puaGrid: document.getElementById('pua-grid'),
-        puaRange: document.getElementById('pua-range'),
-        puaPrev: document.getElementById('pua-prev'),
-        puaNext: document.getElementById('pua-next'),
         glyphGrid: document.getElementById('glyph-grid'),
         glyphRange: document.getElementById('glyph-range'),
         glyphStatus: document.getElementById('glyph-status'),
@@ -85,10 +83,6 @@
     const state = {
         usingMappedPua: Array.isArray(mappedPuaCodePoints),
         mappedPuaCodePoints,
-        puaStart: 0xE000,
-        puaEnd: 0xF8FF,
-        puaPageSize: 0x100,
-        puaPageStart: 0,
         glyphPageSize: 64,
         glyphPageStart: 0,
         glyphCount: 0,
@@ -122,7 +116,6 @@
         copied: textMetadataCopied,
         copyFailed: textMetadataCopyFailed,
     });
-    initPua(refs, state, textNoMappedPua);
     initGlyphIndex(refs, state, embeddedFontUrl, {
         noGlyphData: textNoGlyphData,
         loadingOpenType: textLoadingOpentype,
@@ -133,6 +126,9 @@
         searchNoResults: textGlyphSearchNoResults,
         filterPresetPlaceholder: textGlyphFilterPresetPlaceholder,
         filterInvalidRange: textGlyphFilterInvalidRange,
+        noMappedPua: textNoMappedPua,
+        puaHint: textPuaHint,
+        filterPuaLabel: textGlyphFilterPuaLabel,
     });
     initGlyphDetail(refs, state, {
         title: textGlyphDetailTitle,
@@ -267,84 +263,6 @@ function initTabs(refs, state) {
     });
 }
 
-function initPua(refs, state, textNoMappedPua) {
-    const renderPuaPage = () => {
-        if (!refs.puaGrid || !refs.puaRange || !refs.puaPrev || !refs.puaNext) {
-            return;
-        }
-
-        refs.puaGrid.textContent = '';
-
-        if (state.usingMappedPua && state.mappedPuaCodePoints.length === 0) {
-            refs.puaRange.textContent = textNoMappedPua;
-            refs.puaPrev.disabled = true;
-            refs.puaNext.disabled = true;
-            return;
-        }
-
-        const pageItems = [];
-        let pageEnd = 0;
-        if (state.usingMappedPua) {
-            pageEnd = Math.min(state.puaPageStart + state.puaPageSize, state.mappedPuaCodePoints.length);
-            pageItems.push(...state.mappedPuaCodePoints.slice(state.puaPageStart, pageEnd));
-            const firstCodePoint = pageItems[0];
-            const lastCodePoint = pageItems[pageItems.length - 1];
-            refs.puaRange.textContent =
-                'U+' + toHex(firstCodePoint) + ' - U+' + toHex(lastCodePoint) +
-                ' (' + pageItems.length + ' / ' + state.mappedPuaCodePoints.length + ')';
-        } else {
-            const startCodePoint = state.puaStart + state.puaPageStart;
-            const endCodePoint = Math.min(startCodePoint + state.puaPageSize - 1, state.puaEnd);
-            for (let codePoint = startCodePoint; codePoint <= endCodePoint; codePoint += 1) {
-                pageItems.push(codePoint);
-            }
-            pageEnd = Math.min(state.puaPageStart + state.puaPageSize, state.puaEnd - state.puaStart + 1);
-            refs.puaRange.textContent = 'U+' + toHex(startCodePoint) + ' - U+' + toHex(endCodePoint);
-        }
-
-        const fragment = document.createDocumentFragment();
-        for (const codePoint of pageItems) {
-            const item = document.createElement('div');
-            item.className = 'pua-item';
-
-            const glyph = document.createElement('div');
-            glyph.className = 'pua-glyph sample-font';
-            glyph.textContent = String.fromCodePoint(codePoint);
-
-            const label = document.createElement('div');
-            label.className = 'pua-code';
-            label.textContent = 'U+' + toHex(codePoint);
-
-            item.appendChild(glyph);
-            item.appendChild(label);
-            fragment.appendChild(item);
-        }
-
-        refs.puaGrid.appendChild(fragment);
-        refs.puaPrev.disabled = state.puaPageStart <= 0;
-        refs.puaNext.disabled = state.usingMappedPua
-            ? pageEnd >= state.mappedPuaCodePoints.length
-            : (state.puaStart + pageEnd) > state.puaEnd;
-    };
-
-    if (refs.puaPrev && refs.puaNext) {
-        refs.puaPrev.addEventListener('click', () => {
-            state.puaPageStart = Math.max(0, state.puaPageStart - state.puaPageSize);
-            renderPuaPage();
-        });
-
-        refs.puaNext.addEventListener('click', () => {
-            const maxIndex = state.usingMappedPua
-                ? Math.max(0, state.mappedPuaCodePoints.length - 1)
-                : (state.puaEnd - state.puaStart);
-            state.puaPageStart = Math.min(maxIndex, state.puaPageStart + state.puaPageSize);
-            renderPuaPage();
-        });
-    }
-
-    renderPuaPage();
-}
-
 function formatUnicodeRange(codePoint) {
     var hex = codePoint.toString(16).toUpperCase();
     while (hex.length < 4) {
@@ -456,6 +374,8 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
                 rangeLabel = rp.name + ' (U+' + formatUnicodeRange(rp.start) + '-U+' + formatUnicodeRange(rp.end) + ') — ';
             } else if (state.glyphFilterMode === 'customRange') {
                 rangeLabel = 'Custom range — ';
+            } else if (state.glyphFilterMode === 'pua') {
+                rangeLabel = texts.filterPuaLabel + ' — ';
             }
             refs.glyphRange.textContent =
                 rangeLabel + 'gid ' + state.glyphSearchResults[state.glyphPageStart] + ' - ' + state.glyphSearchResults[pageEnd - 1] +
@@ -644,6 +564,56 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
                     refs.glyphStatus.textContent = texts.searchNoResults;
                 } else {
                     refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+            }
+            state.glyphPageStart = 0;
+            renderGlyphPage();
+            return;
+        }
+
+        if (mode === 'pua') {
+            var PUA_START = 0xE000;
+            var PUA_END = 0xF8FF;
+            state.glyphSearchResults = [];
+
+            if (state.usingMappedPua) {
+                if (state.mappedPuaCodePoints.length === 0) {
+                    if (refs.glyphStatus) {
+                        refs.glyphStatus.textContent = texts.noMappedPua;
+                    }
+                    state.glyphPageStart = 0;
+                    renderGlyphPage();
+                    return;
+                }
+                var puaSet = new Set(state.mappedPuaCodePoints);
+                for (var pai = 0; pai < state.glyphSearchIndex.length; pai += 1) {
+                    var paentry = state.glyphSearchIndex[pai];
+                    var paUnicodes = paentry.unicodes || [];
+                    for (var pau = 0; pau < paUnicodes.length; pau += 1) {
+                        if (puaSet.has(paUnicodes[pau])) {
+                            state.glyphSearchResults.push(paentry.gid);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                for (var pai2 = 0; pai2 < state.glyphSearchIndex.length; pai2 += 1) {
+                    var paentry2 = state.glyphSearchIndex[pai2];
+                    var paUnicodes2 = paentry2.unicodes || [];
+                    for (var pau2 = 0; pau2 < paUnicodes2.length; pau2 += 1) {
+                        if (paUnicodes2[pau2] >= PUA_START && paUnicodes2[pau2] <= PUA_END) {
+                            state.glyphSearchResults.push(paentry2.gid);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (refs.glyphStatus) {
+                if (state.glyphSearchResults.length === 0) {
+                    refs.glyphStatus.textContent = state.usingMappedPua ? texts.noMappedPua : texts.searchNoResults;
+                } else {
+                    refs.glyphStatus.textContent = texts.puaHint;
                 }
             }
             state.glyphPageStart = 0;
