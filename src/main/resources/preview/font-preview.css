@@ -496,8 +496,10 @@ body {
 }
 
 .metadata-list {
-    display: grid;
-    gap: 10px;
+    border: 1px solid var(--item-border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+    overflow: hidden;
 }
 
 .metadata-header {
@@ -513,12 +515,13 @@ body {
 }
 
 .metadata-item {
-    border: 1px solid var(--item-border);
-    border-radius: 12px;
     padding: 12px;
-    background: var(--surface-soft);
     display: grid;
     gap: 10px;
+}
+
+.metadata-item:not(:last-child) {
+    border-bottom: 1px solid var(--item-border);
 }
 
 .metadata-item-head {
