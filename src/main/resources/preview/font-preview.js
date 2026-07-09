@@ -11,6 +11,9 @@
     const textParsingFontBytes = __TEXT_PARSING_FONT_BYTES_LITERAL__;
     const textShowingGlyphIndex = __TEXT_SHOWING_GLYPH_INDEX_LITERAL__;
     const textUnableToParseFont = __TEXT_UNABLE_TO_PARSE_FONT_LITERAL__;
+    const textGlyphSearchNoResults = __TEXT_GLYPH_SEARCH_NO_RESULTS_LITERAL__;
+    const textGlyphFilterPresetPlaceholder = __TEXT_GLYPH_FILTER_PRESET_PLACEHOLDER_LITERAL__;
+    const textGlyphFilterInvalidRange = __TEXT_GLYPH_FILTER_INVALID_RANGE_LITERAL__;
     const textMetadataEmpty = __TEXT_METADATA_EMPTY_LITERAL__;
     const textMetadataCopy = __TEXT_METADATA_COPY_LITERAL__;
     const textMetadataCopyAll = __TEXT_METADATA_COPY_ALL_LITERAL__;
@@ -50,6 +53,12 @@
         glyphStatus: document.getElementById('glyph-status'),
         glyphPrev: document.getElementById('glyph-prev'),
         glyphNext: document.getElementById('glyph-next'),
+        glyphSearchInput: document.getElementById('glyph-search'),
+        glyphFilterMode: document.getElementById('glyph-filter-mode'),
+        glyphFilterPreset: document.getElementById('glyph-filter-preset'),
+        glyphFilterCustom: document.getElementById('glyph-filter-custom'),
+        glyphFilterCustomStart: document.getElementById('glyph-filter-custom-start'),
+        glyphFilterCustomEnd: document.getElementById('glyph-filter-custom-end'),
         metadataList: document.getElementById('metadata-list'),
         metadataStatus: document.getElementById('metadata-status'),
         metadataCopyAll: document.getElementById('metadata-copy-all'),
@@ -83,6 +92,15 @@
         glyphPageSize: 64,
         glyphPageStart: 0,
         glyphCount: 0,
+        glyphSearchIndex: null,
+        glyphSearchQuery: '',
+        glyphSearchResults: null,
+        glyphSearchDebounceTimer: null,
+        glyphFilterMode: 'none',
+        glyphFilterPresetIndex: -1,
+        glyphFilterCustomStart: null,
+        glyphFilterCustomEnd: null,
+        glyphFilterDebounceTimer: null,
         parsedFont: null,
         featureTags: null,
         featureSettings: {},
@@ -112,6 +130,9 @@
         parsingFontBytes: textParsingFontBytes,
         showingGlyphIndex: textShowingGlyphIndex,
         unableToParseFont: textUnableToParseFont,
+        searchNoResults: textGlyphSearchNoResults,
+        filterPresetPlaceholder: textGlyphFilterPresetPlaceholder,
+        filterInvalidRange: textGlyphFilterInvalidRange,
     });
     initGlyphDetail(refs, state, {
         title: textGlyphDetailTitle,
@@ -324,6 +345,73 @@ function initPua(refs, state, textNoMappedPua) {
     renderPuaPage();
 }
 
+function formatUnicodeRange(codePoint) {
+    var hex = codePoint.toString(16).toUpperCase();
+    while (hex.length < 4) {
+        hex = '0' + hex;
+    }
+    return hex;
+}
+
+var GLYPH_UNICODE_BLOCKS = [
+    { name: 'Mahjong Tiles', start: 0x1F000, end: 0x1F02F },
+    { name: 'Domino Tiles', start: 0x1F030, end: 0x1F09F },
+    { name: 'Playing Cards', start: 0x1F0A0, end: 0x1F0FF },
+    { name: 'Chess Symbols', start: 0x1FA00, end: 0x1FA6F },
+    { name: 'Alchemical Symbols', start: 0x1F700, end: 0x1F77F },
+    { name: 'Egyptian Hieroglyphs', start: 0x13000, end: 0x1342F },
+    { name: 'Basic Latin', start: 0x0020, end: 0x007F },
+    { name: 'Latin-1 Supplement', start: 0x0080, end: 0x00FF },
+    { name: 'Latin Extended-A', start: 0x0100, end: 0x017F },
+    { name: 'Greek and Coptic', start: 0x0370, end: 0x03FF },
+    { name: 'Cyrillic', start: 0x0400, end: 0x04FF },
+    { name: 'Hebrew', start: 0x0590, end: 0x05FF },
+    { name: 'Arabic', start: 0x0600, end: 0x06FF },
+    { name: 'Devanagari', start: 0x0900, end: 0x097F },
+    { name: 'Thai', start: 0x0E00, end: 0x0E7F },
+    { name: 'Hiragana', start: 0x3040, end: 0x309F },
+    { name: 'Katakana', start: 0x30A0, end: 0x30FF },
+    { name: 'CJK Unified Ideographs', start: 0x4E00, end: 0x9FFF },
+    { name: 'Hangul Syllables', start: 0xAC00, end: 0xD7AF },
+    { name: 'Arrows', start: 0x2190, end: 0x21FF },
+    { name: 'Mathematical Operators', start: 0x2200, end: 0x22FF },
+    { name: 'Box Drawing', start: 0x2500, end: 0x257F },
+    { name: 'Geometric Shapes', start: 0x25A0, end: 0x25FF },
+    { name: 'Miscellaneous Symbols', start: 0x2600, end: 0x26FF },
+    { name: 'Dingbats', start: 0x2700, end: 0x27BF },
+    { name: 'Braille Patterns', start: 0x2800, end: 0x28FF },
+    { name: 'Emoticons', start: 0x1F600, end: 0x1F64F },
+    { name: 'Transport and Map Symbols', start: 0x1F680, end: 0x1F6FF },
+    { name: 'Misc. Symbols & Pictographs', start: 0x1F300, end: 0x1F5FF },
+];
+
+function normalizeGlyphUnicodes(glyphEntry) {
+    if (!glyphEntry) {
+        return [];
+    }
+    if (Array.isArray(glyphEntry.unicodes)) {
+        return glyphEntry.unicodes;
+    }
+    if (glyphEntry.unicode != null) {
+        return [glyphEntry.unicode];
+    }
+    return [];
+}
+
+function getPrimaryUnicode(glyph) {
+    if (!glyph) {
+        return null;
+    }
+    if (Array.isArray(glyph.unicodes) && glyph.unicodes.length > 0) {
+        var codePoint = glyph.unicodes[0];
+        return typeof codePoint === 'number' ? codePoint : null;
+    }
+    if (glyph.unicode != null) {
+        return glyph.unicode;
+    }
+    return null;
+}
+
 function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
     const setGlyphStatus = (message) => {
         if (refs.glyphStatus) {
@@ -331,7 +419,7 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
         }
     };
 
-    const renderGlyphPage = () => {
+    function renderGlyphPage() {
         if (!refs.glyphGrid || !refs.glyphRange || !refs.glyphPrev || !refs.glyphNext) {
             return;
         }
@@ -344,67 +432,418 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
             return;
         }
 
-        const pageEnd = Math.min(state.glyphPageStart + state.glyphPageSize, state.glyphCount);
-        refs.glyphRange.textContent =
-            'gid ' + state.glyphPageStart + ' - ' + (pageEnd - 1) +
-            ' (' + (pageEnd - state.glyphPageStart) + ' / ' + state.glyphCount + ')';
+        var isSearching = state.glyphSearchResults !== null;
+        var totalCount = isSearching ? state.glyphSearchResults.length : state.glyphCount;
 
-        const fragment = document.createDocumentFragment();
-        for (let gid = state.glyphPageStart; gid < pageEnd; gid += 1) {
-            const glyph = state.parsedFont.glyphs.get(gid);
+        if (isSearching && totalCount === 0) {
+            refs.glyphRange.textContent = '';
+            refs.glyphPrev.disabled = true;
+            refs.glyphNext.disabled = true;
+            return;
+        }
+
+        if (isSearching && state.glyphPageStart >= totalCount) {
+            state.glyphPageStart = 0;
+        }
+
+        var pageEnd = Math.min(state.glyphPageStart + state.glyphPageSize, totalCount);
+
+        if (isSearching) {
+            var showing = Math.min(state.glyphPageSize, totalCount - state.glyphPageStart);
+            var rangeLabel = '';
+            if (state.glyphFilterMode === 'unicodeBlock' && state.glyphFilterPresetIndex >= 0 && state.glyphFilterPresetIndex < GLYPH_UNICODE_BLOCKS.length) {
+                var rp = GLYPH_UNICODE_BLOCKS[state.glyphFilterPresetIndex];
+                rangeLabel = rp.name + ' (U+' + formatUnicodeRange(rp.start) + '-U+' + formatUnicodeRange(rp.end) + ') — ';
+            } else if (state.glyphFilterMode === 'customRange') {
+                rangeLabel = 'Custom range — ';
+            }
+            refs.glyphRange.textContent =
+                rangeLabel + 'gid ' + state.glyphSearchResults[state.glyphPageStart] + ' - ' + state.glyphSearchResults[pageEnd - 1] +
+                ' (' + showing + ' / ' + totalCount + ')';
+        } else {
+            refs.glyphRange.textContent =
+                'gid ' + state.glyphPageStart + ' - ' + (pageEnd - 1) +
+                ' (' + (pageEnd - state.glyphPageStart) + ' / ' + state.glyphCount + ')';
+        }
+
+        var fragment = document.createDocumentFragment();
+        for (var i = state.glyphPageStart; i < pageEnd; i += 1) {
+            var gid = isSearching ? state.glyphSearchResults[i] : i;
+            var glyph = state.parsedFont.glyphs.get(gid);
             if (!glyph) {
                 continue;
             }
 
-            const item = document.createElement('div');
+            var item = document.createElement('div');
             item.className = 'glyph-item';
             item.appendChild(createGlyphCanvas(glyph, state.parsedFont));
 
-            const label = document.createElement('div');
+            var label = document.createElement('div');
             label.className = 'glyph-label';
-            label.textContent = gid === 0 ? 'gid 0 (.notdef)' : 'gid ' + gid;
+            var primaryUnicode = isSearching ? getPrimaryUnicode(glyph) : null;
+            if (primaryUnicode !== null) {
+                label.textContent = 'U+' + toHex(primaryUnicode) + ' (gid ' + gid + ')';
+            } else {
+                label.textContent = gid === 0 ? 'gid 0 (.notdef)' : 'gid ' + gid;
+            }
             item.appendChild(label);
 
-            item.addEventListener('click', () => {
-                const glyphData = buildGlyphDetailData(gid, state.parsedFont);
-                if (glyphData) {
-                    showGlyphDetail(refs, state, glyphData);
-                }
-            });
+            item.addEventListener('click', (function (capturedGid) {
+                return function () {
+                    var glyphData = buildGlyphDetailData(capturedGid, state.parsedFont);
+                    if (glyphData) {
+                        showGlyphDetail(refs, state, glyphData);
+                    }
+                };
+            })(gid));
 
             fragment.appendChild(item);
         }
         refs.glyphGrid.appendChild(fragment);
 
         refs.glyphPrev.disabled = state.glyphPageStart <= 0;
-        refs.glyphNext.disabled = pageEnd >= state.glyphCount;
+        refs.glyphNext.disabled = pageEnd >= totalCount;
+    }
+
+    var performGlyphSearch = function (query) {
+        if (!state.glyphSearchIndex) { return; }
+
+        if (!query || query.trim().length === 0) {
+            state.glyphSearchQuery = '';
+            state.glyphSearchResults = null;
+            state.glyphPageStart = 0;
+            if (refs.glyphStatus) {
+                refs.glyphStatus.textContent = texts.showingGlyphIndex;
+            }
+            renderGlyphPage();
+            return;
+        }
+
+        var q = query.trim();
+        state.glyphSearchQuery = q;
+        var codePoint = null;
+        var cpMatch;
+
+        // U+XXXX, u+XXXX, or \uXXXX (4-6 hex digits)
+        cpMatch = q.match(/^\\?[Uu]\+([0-9A-Fa-f]{4,6})$/);
+        if (cpMatch) { codePoint = parseInt(cpMatch[1], 16); }
+
+        // \uXXXX (4-6 hex digits)
+        if (codePoint === null) {
+            cpMatch = q.match(/^\\u([0-9A-Fa-f]{4,6})$/);
+            if (cpMatch) { codePoint = parseInt(cpMatch[1], 16); }
+        }
+
+        // 0xXXXX
+        if (codePoint === null) {
+            cpMatch = q.match(/^0x([0-9A-Fa-f]+)$/);
+            if (cpMatch) { codePoint = parseInt(cpMatch[1], 16); }
+        }
+
+        // Bare hex (exactly 4-6 hex digits)
+        if (codePoint === null) {
+            cpMatch = q.match(/^([0-9A-Fa-f]{4,6})$/);
+            if (cpMatch) { codePoint = parseInt(cpMatch[1], 16); }
+        }
+
+        // Single literal character (use codePointAt for SMP support)
+        if (codePoint === null && q.length >= 1 && q.length <= 2) {
+            var cp = q.codePointAt(0);
+            if (cp !== undefined) {
+                try {
+                    if (String.fromCodePoint(cp) === q) {
+                        codePoint = cp;
+                    }
+                } catch (_) { /* fall through */ }
+            }
+        }
+
+        // Validate code point range
+        if (codePoint !== null && (codePoint > 0x10FFFF || (codePoint >= 0xD800 && codePoint <= 0xDFFF))) {
+            codePoint = null;
+        }
+
+        var lowerQ = q.toLowerCase();
+        state.glyphSearchResults = [];
+
+        for (var i = 0; i < state.glyphSearchIndex.length; i += 1) {
+            var entry = state.glyphSearchIndex[i];
+            var entryUnicodes = entry.unicodes || [];
+            var matches = false;
+
+            // Exact code point match in unicodes array
+            if (codePoint !== null && entryUnicodes.indexOf(codePoint) !== -1) {
+                matches = true;
+            }
+
+            // Case-insensitive glyph name substring match
+            if (!matches && entry.name && entry.name.toLowerCase().indexOf(lowerQ) !== -1) {
+                matches = true;
+            }
+
+            if (matches) {
+                state.glyphSearchResults.push(entry.gid);
+            }
+        }
+
+        if (refs.glyphStatus) {
+            if (state.glyphSearchResults.length === 0) {
+                refs.glyphStatus.textContent = texts.searchNoResults;
+            } else {
+                refs.glyphStatus.textContent = texts.showingGlyphIndex;
+            }
+        }
+
+        state.glyphPageStart = 0;
+        renderGlyphPage();
+    };
+
+    // --- Filter application ---
+    var applyFilter = function () {
+        if (!state.glyphSearchIndex) { return; }
+
+        var mode = state.glyphFilterMode;
+
+        if (mode === 'none') {
+            state.glyphSearchResults = null;
+            state.glyphPageStart = 0;
+            if (refs.glyphStatus) {
+                refs.glyphStatus.textContent = texts.showingGlyphIndex;
+            }
+            renderGlyphPage();
+            return;
+        }
+
+        if (mode === 'unicodeBlock') {
+            var presetIndex = state.glyphFilterPresetIndex;
+            if (presetIndex < 0 || presetIndex >= GLYPH_UNICODE_BLOCKS.length) {
+                state.glyphSearchResults = null;
+                state.glyphPageStart = 0;
+                if (refs.glyphStatus) {
+                    refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+                renderGlyphPage();
+                return;
+            }
+            var preset = GLYPH_UNICODE_BLOCKS[presetIndex];
+            var rangeStart = preset.start;
+            var rangeEnd = preset.end;
+            state.glyphSearchResults = [];
+            for (var ri = 0; ri < state.glyphSearchIndex.length; ri += 1) {
+                var rentry = state.glyphSearchIndex[ri];
+                var rentryUnicodes = rentry.unicodes || [];
+                for (var ru = 0; ru < rentryUnicodes.length; ru += 1) {
+                    if (rentryUnicodes[ru] >= rangeStart && rentryUnicodes[ru] <= rangeEnd) {
+                        state.glyphSearchResults.push(rentry.gid);
+                        break;
+                    }
+                }
+            }
+            if (refs.glyphStatus) {
+                if (state.glyphSearchResults.length === 0) {
+                    refs.glyphStatus.textContent = texts.searchNoResults;
+                } else {
+                    refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+            }
+            state.glyphPageStart = 0;
+            renderGlyphPage();
+            return;
+        }
+
+        if (mode === 'customRange') {
+            var startStr = (refs.glyphFilterCustomStart && refs.glyphFilterCustomStart.value || '').trim();
+            var endStr = (refs.glyphFilterCustomEnd && refs.glyphFilterCustomEnd.value || '').trim();
+            if (startStr.length === 0 || endStr.length === 0) {
+                state.glyphSearchResults = null;
+                state.glyphPageStart = 0;
+                if (refs.glyphStatus) {
+                    refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+                renderGlyphPage();
+                return;
+            }
+            var cs = parseInt(startStr, 16);
+            var ce = parseInt(endStr, 16);
+            if (isNaN(cs) || isNaN(ce) || cs < 0 || ce < cs || cs > 0x10FFFF || ce > 0x10FFFF) {
+                state.glyphSearchResults = null;
+                state.glyphPageStart = 0;
+                if (refs.glyphStatus) {
+                    refs.glyphStatus.textContent = texts.filterInvalidRange;
+                }
+                renderGlyphPage();
+                return;
+            }
+            rangeStart = cs;
+            rangeEnd = ce;
+            state.glyphSearchResults = [];
+            for (var ci = 0; ci < state.glyphSearchIndex.length; ci += 1) {
+                var centry = state.glyphSearchIndex[ci];
+                var centryUnicodes = centry.unicodes || [];
+                for (var cu = 0; cu < centryUnicodes.length; cu += 1) {
+                    if (centryUnicodes[cu] >= rangeStart && centryUnicodes[cu] <= rangeEnd) {
+                        state.glyphSearchResults.push(centry.gid);
+                        break;
+                    }
+                }
+            }
+            if (refs.glyphStatus) {
+                if (state.glyphSearchResults.length === 0) {
+                    refs.glyphStatus.textContent = texts.searchNoResults;
+                } else {
+                    refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+            }
+            state.glyphPageStart = 0;
+            renderGlyphPage();
+            return;
+        }
+
+        // exactUnicode — handled by performGlyphSearch via debounced input
+        if (mode === 'exactUnicode') {
+            if (refs.glyphSearchInput && refs.glyphSearchInput.value.trim().length > 0) {
+                performGlyphSearch(refs.glyphSearchInput.value);
+            } else {
+                state.glyphSearchResults = null;
+                state.glyphPageStart = 0;
+                if (refs.glyphStatus) {
+                    refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+                renderGlyphPage();
+            }
+            return;
+        }
+    };
+
+    // --- Update which secondary control is visible ---
+    var updateFilterControls = function () {
+        var mode = state.glyphFilterMode;
+        if (refs.glyphFilterPreset) {
+            refs.glyphFilterPreset.style.display = mode === 'unicodeBlock' ? '' : 'none';
+        }
+        if (refs.glyphFilterCustom) {
+            refs.glyphFilterCustom.style.display = mode === 'customRange' ? '' : 'none';
+        }
+        if (refs.glyphSearchInput) {
+            refs.glyphSearchInput.style.display = mode === 'exactUnicode' ? '' : 'none';
+        }
+    };
+
+    var populatePresetDropdown = function () {
+        if (!refs.glyphFilterPreset) {
+            return;
+        }
+
+        var select = refs.glyphFilterPreset;
+        while (select.lastChild) {
+            select.removeChild(select.lastChild);
+        }
+
+        var placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = texts.filterPresetPlaceholder;
+        select.appendChild(placeholderOption);
+
+        for (var bi = 0; bi < GLYPH_UNICODE_BLOCKS.length; bi += 1) {
+            var block = GLYPH_UNICODE_BLOCKS[bi];
+            var option = document.createElement('option');
+            option.value = String(bi);
+            option.textContent = block.name + ' (U+' + formatUnicodeRange(block.start) + '-U+' + formatUnicodeRange(block.end) + ')';
+            select.appendChild(option);
+        }
     };
 
     if (refs.glyphPrev && refs.glyphNext) {
-        refs.glyphPrev.addEventListener('click', () => {
+        refs.glyphPrev.addEventListener('click', function () {
             state.glyphPageStart = Math.max(0, state.glyphPageStart - state.glyphPageSize);
             renderGlyphPage();
         });
 
-        refs.glyphNext.addEventListener('click', () => {
-            const maxIndex = Math.max(0, state.glyphCount - 1);
-            state.glyphPageStart = Math.min(maxIndex, state.glyphPageStart + state.glyphPageSize);
+        refs.glyphNext.addEventListener('click', function () {
+            var total = state.glyphSearchResults !== null ? state.glyphSearchResults.length : state.glyphCount;
+            var maxPageStart = Math.max(0, total - state.glyphPageSize);
+            state.glyphPageStart = Math.min(maxPageStart, state.glyphPageStart + state.glyphPageSize);
             renderGlyphPage();
         });
     }
 
-    window.addEventListener('fontViewerThemeChanged', () => {
+    window.addEventListener('fontViewerThemeChanged', function () {
         if (state.parsedFont && state.glyphCount > 0) {
             renderGlyphPage();
         }
     });
 
+    if (refs.glyphFilterMode) {
+        state.glyphFilterMode = refs.glyphFilterMode.value;
+        refs.glyphFilterMode.addEventListener('change', function () {
+            state.glyphFilterMode = refs.glyphFilterMode.value;
+            state.glyphPageStart = 0;
+            state.glyphSearchQuery = '';
+            state.glyphSearchResults = null;
+            if (refs.glyphSearchInput) {
+                refs.glyphSearchInput.value = '';
+            }
+            updateFilterControls();
+            if (state.glyphFilterMode === 'unicodeBlock' && refs.glyphFilterPreset && refs.glyphFilterPreset.options.length <= 1) {
+                try {
+                    populatePresetDropdown();
+                } catch (_presetErr) {
+                    // Ignore; unicode block filter still works when presets load later.
+                }
+            }
+            if (state.glyphFilterMode === 'exactUnicode') {
+                if (refs.glyphStatus) {
+                    refs.glyphStatus.textContent = texts.showingGlyphIndex;
+                }
+                renderGlyphPage();
+            } else {
+                applyFilter();
+            }
+        });
+    }
+
+    if (refs.glyphFilterPreset) {
+        refs.glyphFilterPreset.addEventListener('change', function () {
+            var val = refs.glyphFilterPreset.value;
+            state.glyphFilterPresetIndex = val === '' ? -1 : parseInt(val, 10);
+            state.glyphPageStart = 0;
+            applyFilter();
+        });
+    }
+
+    if (refs.glyphFilterCustomStart && refs.glyphFilterCustomEnd) {
+        var handleCustomRangeInput = function () {
+            clearTimeout(state.glyphFilterDebounceTimer);
+            state.glyphFilterDebounceTimer = setTimeout(function () {
+                state.glyphPageStart = 0;
+                applyFilter();
+            }, 300);
+        };
+        refs.glyphFilterCustomStart.addEventListener('input', handleCustomRangeInput);
+        refs.glyphFilterCustomEnd.addEventListener('input', handleCustomRangeInput);
+    }
+
+    if (refs.glyphSearchInput) {
+        refs.glyphSearchInput.addEventListener('input', function () {
+            clearTimeout(state.glyphSearchDebounceTimer);
+            state.glyphSearchDebounceTimer = setTimeout(function () {
+                if (state.glyphFilterMode === 'exactUnicode') {
+                    performGlyphSearch(refs.glyphSearchInput.value);
+                }
+            }, 300);
+        });
+    }
+
+    updateFilterControls();
+
     (async () => {
         if (!refs.glyphGrid || !refs.glyphRange || !refs.glyphStatus || !refs.glyphPrev || !refs.glyphNext) {
+            setGlyphStatus(texts.unableToParseFont);
             return;
         }
 
         setGlyphStatus(texts.loadingOpenType);
+
         const ready = await ensureOpenType();
         if (!ready || !window.opentype) {
             setGlyphStatus(texts.openTypeUnavailable);
@@ -417,6 +856,23 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
             const buffer = await response.arrayBuffer();
             state.parsedFont = window.opentype.parse(buffer);
             state.glyphCount = state.parsedFont.numGlyphs || (state.parsedFont.glyphs ? state.parsedFont.glyphs.length : 0);
+            // Build search index for fast glyph lookup
+            state.glyphSearchIndex = [];
+            for (var gid = 0; gid < state.glyphCount; gid += 1) {
+                var glyphEntry = state.parsedFont.glyphs.get(gid);
+                if (!glyphEntry) { continue; }
+                var unicodes = normalizeGlyphUnicodes(glyphEntry);
+                var ch = '';
+                for (var u = 0; u < unicodes.length; u += 1) {
+                    try { ch += String.fromCodePoint(unicodes[u]); } catch (_) { /* skip */ }
+                }
+                state.glyphSearchIndex.push({
+                    gid: gid,
+                    name: glyphEntry.name || '',
+                    unicodes: unicodes,
+                    char: ch,
+                });
+            }
             extractFeatureTags(state);
             renderFeaturesTab(refs, state, texts);
             if (!state.glyphCount || state.glyphCount <= 0) {
@@ -426,12 +882,22 @@ function initGlyphIndex(refs, state, embeddedFontUrl, texts) {
             }
 
             setGlyphStatus(texts.showingGlyphIndex);
-            renderGlyphPage();
+            if (state.glyphFilterMode === 'exactUnicode' && refs.glyphSearchInput && refs.glyphSearchInput.value.trim().length > 0) {
+                performGlyphSearch(refs.glyphSearchInput.value);
+            } else {
+                applyFilter();
+            }
         } catch (_ignored) {
             setGlyphStatus(texts.unableToParseFont);
             renderGlyphPage();
         }
     })();
+
+    try {
+        populatePresetDropdown();
+    } catch (_presetErr) {
+        // Unicode block presets are optional; other filters still work.
+    }
 }
 
 async function ensureOpenType() {

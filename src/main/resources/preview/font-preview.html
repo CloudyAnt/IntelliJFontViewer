@@ -88,6 +88,19 @@
         <section class="card tab-panel" data-tab-panel="glyph-index">
             <div class="section-title">__TEXT_GLYPH_INDEX_TITLE__</div>
             <div class="glyph-toolbar">
+                <select id="glyph-filter-mode" class="glyph-filter-select">
+                    <option value="none">__TEXT_GLYPH_FILTER_MODE_NONE__</option>
+                    <option value="unicodeBlock">__TEXT_GLYPH_FILTER_MODE_UNICODE_BLOCK__</option>
+                    <option value="customRange">__TEXT_GLYPH_FILTER_MODE_CUSTOM_RANGE__</option>
+                    <option value="exactUnicode">__TEXT_GLYPH_FILTER_MODE_EXACT_UNICODE__</option>
+                </select>
+                <select id="glyph-filter-preset" class="glyph-filter-select" style="display:none"></select>
+                <span id="glyph-filter-custom" class="glyph-filter-custom" style="display:none">
+                    <input id="glyph-filter-custom-start" class="glyph-filter-range-input" type="text" placeholder="__TEXT_GLYPH_FILTER_CUSTOM_START__" autocomplete="off" />
+                    <span class="glyph-filter-range-sep">–</span>
+                    <input id="glyph-filter-custom-end" class="glyph-filter-range-input" type="text" placeholder="__TEXT_GLYPH_FILTER_CUSTOM_END__" autocomplete="off" />
+                </span>
+                <input id="glyph-search" class="glyph-search-input" type="text" placeholder="__TEXT_GLYPH_SEARCH_PLACEHOLDER__" autocomplete="off" style="display:none" />
                 <button id="glyph-prev" class="pua-action" type="button">__TEXT_PREVIOUS__</button>
                 <button id="glyph-next" class="pua-action" type="button">__TEXT_NEXT__</button>
                 <span id="glyph-range" class="pua-range"></span>
