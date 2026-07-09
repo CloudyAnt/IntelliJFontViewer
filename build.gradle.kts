@@ -42,9 +42,10 @@ intellijPlatform {
         }
 
         changeNotes = """
-            <b>0.0.1</b> Initial version. Contains Overview, PUA, GlyphIndex and Metadata tabs.<br>
+            <b>0.2.0</b> Add glyph index filters (Unicode blocks, PUA, custom range), Unicode escape input in Overview and Playground, and consolidate metadata layout.<br>
+            <b>0.1.1</b> Fix a little compatible problem.<br>
             <b>0.1.0</b> Add Playground tab to preview OpenType features and test custom text input.<br>
-            <b>0.1.1</b> Fix a little compatible problem.
+            <b>0.0.1</b> Initial version. Contains Overview, PUA, GlyphIndex and Metadata tabs.
         """.trimIndent()
     }
 }
